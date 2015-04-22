@@ -1,0 +1,149 @@
+<!--
+  This is a Freshplug that list all available categories and folders. When clicking on a create tutorial button, the Iorad page shows up. Upon closing the tutorial page, it is automatically added to a new article page in a selected folder.
+-->
+
+<div id="ioradWidget" title="Iorad Tutorial Widget">
+  <div id="content">
+    <div id="tutorialLocation">
+      <div><label>Categories</label><select id="categorySelector"></select></div>
+      <div><label>Solutions</label><span id='foldersList'></span></div>
+    </div>
+    <div id="control">
+      <a id='newTutorialBtn' class='btn btn-primary' title='open IORAD editor' href='#'><span class='symbols-add'></span> Add Tutorial</a>
+    </div>
+    
+    <div class="modal hide fade" role="dialog" id="successModal" aria-hidden="true" style="display:none;">
+      <div class="modal-header">New tutorial added to Knowledgebase...</div>
+      <div class="modal-body">
+        <div id="successMsg"></div>
+      </div>
+    </div>
+  </div>
+  <div id="error">
+    
+  </div>
+</div>
+<style>
+.invisible-options{
+  display: none;
+}
+</style>
+<script type="text/javascript" src="https://www.iorad.com/server/assets/js/iorad.js"></script>
+<script type="text/javascript">
+  (function ($, win){
+    iorad = win.iorad || {};
+    
+    var SOLUTION_CATEGORIES_API_URL = '/solution/categories.json';
+    var ARTICLE_API_URL = '/solution/categories/{category_id}/folders/{folder_id}/articles.json';
+    var freshdeskAjaxOption = function () {
+      return {
+        dataType: 'json',
+        contentType: 'application/json'
+      };
+    };
+
+    var listCategories = function () {
+      var ajaxOptions = freshdeskAjaxOption();
+      ajaxOptions.type = 'GET';
+      ajaxOptions.url = SOLUTION_CATEGORIES_API_URL;
+      return $.ajax( ajaxOptions );
+    };
+
+    var createArticle = function (categoryId, folderId, article) {
+      var ajaxOptions = freshdeskAjaxOption();
+      ajaxOptions.type = 'POST';
+      ajaxOptions.url = ARTICLE_API_URL.replace( '{category_id}', categoryId.toString() ).replace( '{folder_id}', folderId.toString() );
+      ajaxOptions.data = article;
+      console.log(ajaxOptions);
+      return $.ajax(ajaxOptions);
+    };
+
+    var categoryChangedHandler = function (e) {
+      var $categorySelector = $(e.srcElement);
+
+      $("#foldersList").children().each( function (index, childSelector) {
+        $(childSelector).addClass("invisible-options");
+      });
+
+      $("#" + $categorySelector.val()).removeClass("invisible-options");
+      
+    };
+
+    var populateTutorialLocation = function (data) {
+      var options = '';
+      var foldersSelectors = '';
+      data.each( function (categoryObj) {
+        options += '<option value="' + categoryObj.category.id + '">' + categoryObj.category.name + '</option>';
+
+        var selector = '<select id="'+ categoryObj.category.id +'"class="invisible-options">';
+
+        categoryObj.category.folders.each( function (folderObj) {
+          selector += '<option value="' + folderObj.id + '">' + folderObj.name + '</option>';
+        });
+
+        selector += '</select>';
+        foldersSelectors += selector;
+      } );
+
+      var $categorySelector = $("#categorySelector");
+      $categorySelector.html(options);
+      $("#foldersList").html(foldersSelectors);
+     
+      $("#" + $categorySelector.val()).removeClass("invisible-options");
+
+      $categorySelector.click(categoryChangedHandler);
+    };
+
+    listCategories().then(populateTutorialLocation, function (err){
+      
+    });
+
+    iorad.init({env:'live'}, function () {
+      // iorad is ready now.
+      var t = 0;
+
+      // register events
+      $("#newTutorialBtn").click( function() {
+        $("body").addClass("iorad-loading");
+        iorad.createTutorial();
+        t = setTimeout( function () {
+          $("body").removeClass("iorad-loading");
+        }, 5000);
+        $("#iorad-editor").off().load( function () {
+          $("body").addClass("iorad-open")
+          clearTimeout(t);
+        });
+      });
+
+      iorad.on('editor:close', function(tutorialParams) {
+            $('body').removeClass('iorad-open iorad-loading');
+            clearTimeout(t);
+            var iframe = iorad.getEmbeddedPlayerUrl(tutorialParams.uid,
+                tutorialParams.tutorialId, tutorialParams.tutorialTitle)           
+
+            var categoryId = $("#categorySelector").val();
+            var folderId = $("#" + categoryId).val();
+            var SUCCESS_MSG_TEMPLATE = "<label>{msg}</label><span> has been successfully created.</span>";
+            var article = {
+              solution_article: {
+                "title": tutorialParams.tutorialTitle,
+                "folder_id": folderId,
+                "description": iframe.replace(/\"/g, "'")
+              }
+            };
+
+            var articleJson = JSON.stringify(article);
+            
+            createArticle(categoryId, folderId, articleJson).then( function (data) {
+              console.log(data);
+              var $successMsg = $("#successMsg");
+              $successMsg.html(SUCCESS_MSG_TEMPLATE.replace('{msg}', tutorialParams.tutorialTitle));
+              $("#successModal").modal('show');
+            }, function (err){});
+
+      });
+
+    });
+  })(jQuery, window);
+
+</script>
