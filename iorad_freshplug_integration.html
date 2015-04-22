@@ -17,6 +17,7 @@
       <div class="modal-body">
         <div id="successMsg"></div>
       </div>
+      <div class="modal-footer"></div>
     </div>
   </div>
   <div id="error">
@@ -118,8 +119,12 @@
       iorad.on('editor:close', function(tutorialParams) {
             $('body').removeClass('iorad-open iorad-loading');
             clearTimeout(t);
-            var iframe = iorad.getEmbeddedPlayerUrl(tutorialParams.uid,
+            var iframeHTML = iorad.getEmbeddedPlayerUrl(tutorialParams.uid,
                 tutorialParams.tutorialId, tutorialParams.tutorialTitle)           
+
+            var $tutorialViewStepsIframe = $(iframeHTML);
+
+            $tutorialViewStepsIframe.attr("src", $tutorialViewStepsIframe.attr("src") + "#viewsteps");
 
             var categoryId = $("#categorySelector").val();
             var folderId = $("#" + categoryId).val();
@@ -128,7 +133,7 @@
               solution_article: {
                 "title": tutorialParams.tutorialTitle,
                 "folder_id": folderId,
-                "description": iframe.replace(/\"/g, "'")
+                "description": "<div>" + $tutorialViewStepsIframe.prop("outerHTML").replace(/\"/g, "'") + "</div>"
               }
             };
 
