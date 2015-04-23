@@ -28,7 +28,7 @@
 }
 </style>
 <script type="text/javascript">
-  CustomWidget.include_js("//www.iorad.com/server/assets/js/iorad.js");
+  CustomWidget.include_js("//test.iorad.com/server/assets/js/iorad.js");
 
   (function ($, win){
     var initializeWidget = function () {
@@ -88,7 +88,7 @@
 
       listCategories().then(populateTutorialLocation, function (err) {});
 
-      iorad.init({env:'live'}, function () {
+      iorad.init({env:'prod'}, function () {
         // iorad is ready now.
         var t = 0;
 
