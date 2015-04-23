@@ -10,18 +10,16 @@
     </div>
     <div id="control">
       <a id='newTutorialBtn' class='btn btn-primary' title='open IORAD editor' href='#'><span class='symbols-add'></span> Add Tutorial</a>
-    </div>
-    
-    <div class="modal hide fade" role="dialog" id="successModal" aria-hidden="true" style="display:none;">
-      <div class="modal-header">New tutorial added to Knowledgebase...</div>
-      <div class="modal-body">
-        <div id="successMsg"></div>
+      <div class="modal hide fade" role="dialog" id="successModal" aria-hidden="true" style="display:none;">
+        <div class="modal-header">New tutorial added to Knowledgebase...</div>
+        <div class="modal-body">
+          <div id="successMsg"></div>
+        </div>
+        <div class="modal-footer"></div>
       </div>
-      <div class="modal-footer"></div>
-    </div>
+    </div> 
   </div>
-  <div id="error">
-    
+  <div id="error">    
   </div>
 </div>
 <style>
@@ -29,126 +27,131 @@
   display: none;
 }
 </style>
-<script type="text/javascript" src="https://www.iorad.com/server/assets/js/iorad.js"></script>
 <script type="text/javascript">
+  CustomWidget.include_js("//www.iorad.com/server/assets/js/iorad.js");
+
   (function ($, win){
-    iorad = win.iorad || {};
+    var initializeWidget = function () {
+      iorad = win.iorad || {};
     
-    var SOLUTION_CATEGORIES_API_URL = '/solution/categories.json';
-    var ARTICLE_API_URL = '/solution/categories/{category_id}/folders/{folder_id}/articles.json';
-    var freshdeskAjaxOption = function () {
-      return {
-        dataType: 'json',
-        contentType: 'application/json'
+      var SOLUTION_CATEGORIES_API_URL = '/solution/categories.json';
+      var ARTICLE_API_URL = '/solution/categories/{category_id}/folders/{folder_id}/articles.json';
+      var freshdeskAjaxOption = function () {
+        return {
+          dataType: 'json',
+          contentType: 'application/json'
+        };
       };
-    };
 
-    var listCategories = function () {
-      var ajaxOptions = freshdeskAjaxOption();
-      ajaxOptions.type = 'GET';
-      ajaxOptions.url = SOLUTION_CATEGORIES_API_URL;
-      return $.ajax( ajaxOptions );
-    };
+      var listCategories = function () {
+        var ajaxOptions = freshdeskAjaxOption();
+        ajaxOptions.type = 'GET';
+        ajaxOptions.url = SOLUTION_CATEGORIES_API_URL;
+        return $.ajax( ajaxOptions );
+      };
 
-    var createArticle = function (categoryId, folderId, article) {
-      var ajaxOptions = freshdeskAjaxOption();
-      ajaxOptions.type = 'POST';
-      ajaxOptions.url = ARTICLE_API_URL.replace( '{category_id}', categoryId.toString() ).replace( '{folder_id}', folderId.toString() );
-      ajaxOptions.data = article;
-      console.log(ajaxOptions);
-      return $.ajax(ajaxOptions);
-    };
+      var createArticle = function (categoryId, folderId, article) {
+        var ajaxOptions = freshdeskAjaxOption();
+        ajaxOptions.type = 'POST';
+        ajaxOptions.url = ARTICLE_API_URL.replace( '{category_id}', categoryId.toString() ).replace( '{folder_id}', folderId.toString() );
+        ajaxOptions.data = article;
+        return $.ajax(ajaxOptions);
+      };
 
-    var categoryChangedHandler = function (e) {
-      var $categorySelector = $(e.srcElement);
+      var categoryChangedHandler = function (e) {
+        var $categorySelector = $(e.srcElement);
+        $("#foldersList").children().each( function (index, childSelector) {
+          $(childSelector).addClass("invisible-options");
+        });
+        $("#" + $categorySelector.val()).removeClass("invisible-options");
+      };
 
-      $("#foldersList").children().each( function (index, childSelector) {
-        $(childSelector).addClass("invisible-options");
-      });
-
-      $("#" + $categorySelector.val()).removeClass("invisible-options");
-      
-    };
-
-    var populateTutorialLocation = function (data) {
-      var options = '';
-      var foldersSelectors = '';
-      data.each( function (categoryObj) {
-        options += '<option value="' + categoryObj.category.id + '">' + categoryObj.category.name + '</option>';
-
-        var selector = '<select id="'+ categoryObj.category.id +'"class="invisible-options">';
-
-        categoryObj.category.folders.each( function (folderObj) {
-          selector += '<option value="' + folderObj.id + '">' + folderObj.name + '</option>';
+      var populateTutorialLocation = function (data) {
+        var options = '';
+        var foldersSelectors = '';
+        data.each( function (categoryObj) {
+          options += '<option value="' + categoryObj.category.id + '">' + categoryObj.category.name + '</option>';
+          var selector = '<select id="'+ categoryObj.category.id +'"class="invisible-options">';
+          categoryObj.category.folders.each( function (folderObj) {
+            selector += '<option value="' + folderObj.id + '">' + folderObj.name + '</option>';
+          });
+          selector += '</select>';
+          foldersSelectors += selector;
         });
 
-        selector += '</select>';
-        foldersSelectors += selector;
-      } );
+        var $categorySelector = $("#categorySelector");
+        $categorySelector.html(options);
+        $("#foldersList").html(foldersSelectors);
+        $("#" + $categorySelector.val()).removeClass("invisible-options");
+        $categorySelector.click(categoryChangedHandler);
+      };
 
-      var $categorySelector = $("#categorySelector");
-      $categorySelector.html(options);
-      $("#foldersList").html(foldersSelectors);
-     
-      $("#" + $categorySelector.val()).removeClass("invisible-options");
+      listCategories().then(populateTutorialLocation, function (err) {});
 
-      $categorySelector.click(categoryChangedHandler);
-    };
+      iorad.init({env:'live'}, function () {
+        // iorad is ready now.
+        var t = 0;
 
-    listCategories().then(populateTutorialLocation, function (err){
-      
-    });
-
-    iorad.init({env:'live'}, function () {
-      // iorad is ready now.
-      var t = 0;
-
-      // register events
-      $("#newTutorialBtn").click( function() {
-        $("body").addClass("iorad-loading");
-        iorad.createTutorial();
-        t = setTimeout( function () {
-          $("body").removeClass("iorad-loading");
-        }, 5000);
-        $("#iorad-editor").off().load( function () {
-          $("body").addClass("iorad-open")
-          clearTimeout(t);
-        });
-      });
-
-      iorad.on('editor:close', function(tutorialParams) {
-            $('body').removeClass('iorad-open iorad-loading');
+        // register events
+        $("#newTutorialBtn").click( function() {
+          $("body").addClass("iorad-loading");
+          iorad.createTutorial();
+          t = setTimeout( function () {
+            $("body").removeClass("iorad-loading");
+          }, 5000);
+          $("#iorad-editor").off().load( function () {
+            $("body").addClass("iorad-open");
             clearTimeout(t);
-            var iframeHTML = iorad.getEmbeddedPlayerUrl(tutorialParams.uid,
-                tutorialParams.tutorialId, tutorialParams.tutorialTitle)           
+          });
+        });
 
-            var $tutorialViewStepsIframe = $(iframeHTML);
+        iorad.on('editor:close', function(tutorialParams) {
+          $('body').removeClass('iorad-open iorad-loading');
+          clearTimeout(t);
+          var iframeHTML = iorad.getEmbeddedPlayerUrl(tutorialParams.uid,
+                            tutorialParams.tutorialId, tutorialParams.tutorialTitle);       
 
-            $tutorialViewStepsIframe.attr("src", $tutorialViewStepsIframe.attr("src") + "#viewsteps");
+          var $tutorialViewStepsIframe = $(iframeHTML);
 
-            var categoryId = $("#categorySelector").val();
-            var folderId = $("#" + categoryId).val();
-            var SUCCESS_MSG_TEMPLATE = "<label>{msg}</label><span> has been successfully created.</span>";
-            var article = {
-              solution_article: {
-                "title": tutorialParams.tutorialTitle,
-                "folder_id": folderId,
-                "description": "<div>" + $tutorialViewStepsIframe.prop("outerHTML").replace(/\"/g, "'") + "</div>"
-              }
-            };
+          $tutorialViewStepsIframe.attr("src", $tutorialViewStepsIframe.attr("src") + "#viewsteps");
 
-            var articleJson = JSON.stringify(article);
+          var categoryId = $("#categorySelector").val();
+          var folderId = $("#" + categoryId).val();
+          var SUCCESS_MSG_TEMPLATE = "<label>{msg}</label><span> has been successfully created.</span>";
+          var article = {
+            solution_article: {
+              "title": tutorialParams.tutorialTitle,
+              "folder_id": folderId,
+              "description": "<div>" + $tutorialViewStepsIframe.prop("outerHTML").replace(/\"/g, "'") + "</div>"
+            }
+          };
+
+          var articleJson = JSON.stringify(article);
             
-            createArticle(categoryId, folderId, articleJson).then( function (data) {
-              console.log(data);
-              var $successMsg = $("#successMsg");
-              $successMsg.html(SUCCESS_MSG_TEMPLATE.replace('{msg}', tutorialParams.tutorialTitle));
-              $("#successModal").modal('show');
-            }, function (err){});
+          createArticle(categoryId, folderId, articleJson).then( function (data) {
+            var $successMsg = $("#successMsg");
+            $successMsg.html(SUCCESS_MSG_TEMPLATE.replace('{msg}', tutorialParams.tutorialTitle));
+            $("#successModal").modal('show');
+          }, function (err){});
+        });
 
       });
+    };
 
-    });
+    var ioradLoaded = function (callback) {
+      var interval = 10;
+      var tryLoad = function () {
+        if(win.iorad){
+          callback();
+        } else {
+          win.setTimeout(tryLoad, interval);
+        }
+      };
+
+      win.setTimeout(tryLoad, interval);
+    };
+
+    ioradLoaded(initializeWidget);
   })(jQuery, window);
 
 </script>
