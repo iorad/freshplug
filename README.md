@@ -10,3 +10,5 @@ This is a Freshplug that list all available categories and folders. When clickin
 
 ## Changelog
 
+## Note
+If the modal box showing article creation successful does not pop up, refresh the ticket view a couple of times.
