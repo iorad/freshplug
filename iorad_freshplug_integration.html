@@ -10,14 +10,7 @@
     </div>
     <div id="control">
       <a id='newTutorialBtn' class='btn btn-primary' title='open IORAD editor' href='#'><span class='symbols-add'></span> Add Tutorial</a>
-      <div class="modal hide fade" role="dialog" id="successModal" aria-hidden="true" style="display:none;">
-        <div class="modal-header">New tutorial added to Knowledgebase...</div>
-        <div class="modal-body">
-          <div id="successMsg"></div>
-        </div>
-        <div class="modal-footer"></div>
-      </div>
-    </div> 
+    </div>
   </div>
   <div id="error">    
   </div>
@@ -116,8 +109,10 @@
           $tutorialViewStepsIframe.attr("src", $tutorialViewStepsIframe.attr("src") + "#viewsteps");
 
           var categoryId = $("#categorySelector").val();
-          var folderId = $("#" + categoryId).val();
-          var SUCCESS_MSG_TEMPLATE = "<label>{msg}</label><span> has been successfully created.</span>";
+          var folderId = $( "#" + categoryId ).val();
+          var MODAL_TEMPLATE = "<div class=\"modal hide fade\" role=\"dialog\" id=\"successModal\" aria-hidden=\"true\" style=\"display:none;\"><div class=\"modal-header\">New tutorial added to Knowledgebase...</div><div class=\"modal-body\"><div id=\"successMsg\"></div></div><div class=\"modal-footer\"></div></div>";
+          var SUCCESS_MSG_TEMPLATE = "<label>{msg}</label><span> has been successfully created.</span><span style=\"display: block;\"><a href=\"{url}\">Click here to view article.</a></span>";
+          var ARTICLE_URL = "/solution/categories/{categoryId}/folders/{folderId}/articles/{id}";
           var article = {
             solution_article: {
               "title": tutorialParams.tutorialTitle,
@@ -128,9 +123,15 @@
 
           var articleJson = JSON.stringify(article);
             
-          createArticle(categoryId, folderId, articleJson).then( function (data) {
+          createArticle( categoryId, folderId, articleJson ).then( function ( data )
+          {            
+            $( 'body' ).append( MODAL_TEMPLATE );
+
             var $successMsg = $("#successMsg");
-            $successMsg.html(SUCCESS_MSG_TEMPLATE.replace('{msg}', tutorialParams.tutorialTitle));
+            var articleUrl = ARTICLE_URL.replace('{categoryId}', categoryId)
+                                        .replace('{folderId}', folderId)
+                                        .replace('{id}', data.article.id);
+            $successMsg.html(SUCCESS_MSG_TEMPLATE.replace('{msg}', tutorialParams.tutorialTitle).replace('{url}', articleUrl));
             $("#successModal").modal('show');
           }, function (err){});
         });
