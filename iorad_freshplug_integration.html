@@ -1,28 +1,58 @@
 <!--
   This is a Freshplug that list all available categories and folders. When clicking on a create tutorial button, the Iorad page shows up. Upon closing the tutorial page, it is automatically added to a new article page in a selected folder.
 -->
-
-<div id="ioradWidget" title="Iorad Tutorial Widget">
-  <div id="content">
-    <div id="tutorialLocation">
-      <div><label>Categories</label><select id="categorySelector"></select></div>
-      <div><label>Solutions</label><span id='foldersList'></span></div>
-    </div>
+{% if portal.user.is_agent %}
+<section id="ioradWidget" class="help-center rounded-6 iorad-widget hide-in-mobile" title="Iorad Tutorial Widget">
+  <div id="tutorialLocation" class="widget-layout">
+    <div class="widget-header"><h2 class="heading">Create a Solution</h2></div>
+    <div class="widget-location-selector"><div class="selector-label"><h4>Categories</h4></div><div><select id="categorySelector"></select></div></div>
+    <div class="widget-location-selector"><div class="selector-label"><h4>Solutions</h4></div><div id='foldersList'></div></div>
     <div id="control">
-      <a id='newTutorialBtn' class='btn btn-primary' title='open IORAD editor' href='#'><span class='symbols-add'></span> Add Tutorial</a>
+      <a id='newTutorialBtn' class='btn btn-iroad-widget' title='open IORAD editor' href='#'>ADD</a>
     </div>
   </div>
-  <div id="error">    
-  </div>
-</div>
+</section>
+{% endif %}
 <style>
 .invisible-options{
   display: none;
 }
+.iorad-widget div {
+  display: inline-block;
+}
+#control {
+  float: right;
+  position: relative;
+}
+.widget-layout {
+  width: 98%;
+}
+.widget-header {
+  padding-right: 2em;
+}
+.widget-location-selector {
+  padding-right: 2em;
+  height: 30px;
+}
+.widget-location-selector .selector-label {
+  padding-right: 1em;
+  vertical-align: middle;
+}
+.btn-iroad-widget {
+  color: white;
+  background-color: #006063;
+  background-image: none;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.25);
+  width: 112px;
+  line-height: 26px;
+}
+.iorad-widget-modal {
+  width: 28%;
+  font-size: 16px;
+}
 </style>
+<script type='text/javascript' src='//test.iorad.com/server/assets/js/iorad.js'></script>
 <script type="text/javascript">
-  CustomWidget.include_js("//test.iorad.com/server/assets/js/iorad.js");
-
   (function ($, win){
     var initializeWidget = function () {
       iorad = win.iorad || {};
@@ -110,8 +140,8 @@
 
           var categoryId = $("#categorySelector").val();
           var folderId = $( "#" + categoryId ).val();
-          var MODAL_TEMPLATE = "<div class=\"modal hide fade\" role=\"dialog\" id=\"successModal\" aria-hidden=\"true\" style=\"display:none;\"><div class=\"modal-header\">New tutorial added to Knowledgebase...</div><div class=\"modal-body\"><div id=\"successMsg\"></div></div><div class=\"modal-footer\"></div></div>";
-          var SUCCESS_MSG_TEMPLATE = "<label>{msg}</label><span> has been successfully created.</span><span style=\"display: block;\"><a href=\"{url}\">Click here to view article.</a></span>";
+          var MODAL_TEMPLATE = "<div class=\"modal hide fade iorad-widget-modal\" role=\"dialog\" id=\"successModal\" aria-hidden=\"true\" style=\"display:none;\"><div class=\"modal-header\"></div><div class=\"modal-body\"><div id=\"successMsg\"></div></div><div class=\"modal-footer\"><button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Close</button><a class=\"btn btn-primary\" href=\"{url}\">VIEW ARTICLE</a></div></div>";
+          var SUCCESS_MSG_TEMPLATE = "The solution <b>{msg}</b> has been successfully created.";
           var ARTICLE_URL = "/solution/categories/{categoryId}/folders/{folderId}/articles/{id}";
           var article = {
             solution_article: {
@@ -124,15 +154,21 @@
           var articleJson = JSON.stringify(article);
             
           createArticle( categoryId, folderId, articleJson ).then( function ( data )
-          {            
-            $( 'body' ).append( MODAL_TEMPLATE );
-
-            var $successMsg = $("#successMsg");
+          {                        
             var articleUrl = ARTICLE_URL.replace('{categoryId}', categoryId)
                                         .replace('{folderId}', folderId)
-                                        .replace('{id}', data.article.id);
-            $successMsg.html(SUCCESS_MSG_TEMPLATE.replace('{msg}', tutorialParams.tutorialTitle).replace('{url}', articleUrl));
-            $("#successModal").modal('show');
+                                        .replace( '{id}', data.article.id );
+
+            // add a safe guard here.
+            if ( $( "#successModal" ).length > 0 ) {
+              $( "#successModal" ).remove();
+            }
+
+            $( 'body' ).append( MODAL_TEMPLATE.replace('{url}', articleUrl));
+
+            var $successMsg = $( "#successMsg" );
+            $successMsg.html( SUCCESS_MSG_TEMPLATE.replace( '{msg}', tutorialParams.tutorialTitle ) );
+            $( "#successModal" ).modal( 'show' );
           }, function (err){});
         });
 
