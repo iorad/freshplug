@@ -51,7 +51,7 @@
   font-size: 16px;
 }
 </style>
-<script type='text/javascript' src='//test.iorad.com/server/assets/js/iorad.js'></script>
+<script type='text/javascript' src='//iorad.com/server/assets/js/iorad.js'></script>
 <script type="text/javascript">
   (function ($, win){
     var initializeWidget = function () {
@@ -111,7 +111,7 @@
 
       listCategories().then(populateTutorialLocation, function (err) {});
 
-      iorad.init({env:'prod'}, function () {
+      iorad.init({env:'live'}, function () {
         // iorad is ready now.
         var t = 0;
 
@@ -172,7 +172,8 @@
           }, function (err){});
         });
 
-      });
+      } );
+  
     };
 
     var ioradLoaded = function (callback) {
